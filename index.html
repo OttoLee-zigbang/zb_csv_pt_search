@@ -50,7 +50,7 @@
     </div>
 
     <script>
-        // 캐시 방지를 위해 주소 뒤에 실시간 시간값을 강제로 붙여 매번 새로운 파일로 인식하게 만들었습니다.
+        // 캐시 차단을 포함한 실시간 구글 시트 웹게시 CSV 주소
         const googleSheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNQCQJ6a31n8CaHsbys-hZTkrPPWr36q5txpGP9UjZsxG-0XbyRLf7qhAKx7fme3KAlG9LTejSpiI_/pub?gid=0&single=true&output=csv&nocache=" + new Date().getTime();
 
         let branchDatabase = []; 
@@ -63,7 +63,6 @@
                 })
                 .then(csvText => {
                     parseCSV(csvText); 
-                    // 확실하게 직방 전용 문구 고정
                     document.getElementById('connectionStatus').innerText = "✅ 직방 서비스 지정점 DB 연동 완료!";
                     document.getElementById('connectionStatus').className = "text-center text-xs font-semibold mb-4 p-2 bg-green-50 text-green-700 rounded-lg";
                 })
@@ -123,10 +122,11 @@
             if (matchedBranches.length > 0) {
                 let htmlContent = '';
                 matchedBranches.forEach(branch => {
+                    // [수정 사항 반영] 2행에 우편번호를 숨기고 "선택 제품군 + 서비스 지정점"만 출력하도록 포맷 변경
                     htmlContent += `
                         <div class="p-4 mb-3 border border-blue-100 bg-blue-50/50 rounded-xl">
                             <div class="font-bold text-gray-900 text-base mb-1">${branch.name}</div>
-                            <div class="text-sm text-gray-500 mb-2">지정 구분: ${branch.category} (우편번호: ${branch.postcode})</div>
+                            <div class="text-sm text-gray-500 mb-2">${category} 서비스 지정점</div>
                             <a href="tel:${branch.phone}" class="inline-flex items-center text-sm font-semibold text-blue-600 hover:underline">
                                 📞 ${branch.phone}
                             </a>
