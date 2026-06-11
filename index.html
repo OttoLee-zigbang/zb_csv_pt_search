@@ -11,11 +11,8 @@
 
     <div class="max-w-md w-full bg-white shadow-lg rounded-2xl p-6 border border-gray-100">
         
-        <div class="flex items-center justify-center gap-2 mb-6">
-            <svg class="h-8 w-8 shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M50 12 L15 42 L27 52 L50 31 L73 52 L85 42 Z" fill="#ff681b"/>
-                <path d="M27 52 L27 75 L42 75 L42 60 L58 60 L58 75 L73 75 L73 52 L50 31 Z" fill="#ff681b"/>
-            </svg>
+        <div class="flex items-center justify-center gap-3 mb-6">
+            <img src="./Zigbang_Symbol_Profile.png" alt="직방 로고" class="h-8 w-auto object-contain shrink-0">
             <h1 class="text-2xl font-bold text-gray-900 tracking-tight">직방 서비스 지정점 찾기</h1>
         </div>
         
@@ -97,7 +94,6 @@
             }
         }
 
-        // 카카오 주소창 열기
         function openAddrSearch() {
             new daum.Postcode({
                 oncomplete: function(data) {
@@ -107,7 +103,6 @@
             }).open();
         }
 
-        // 매칭 검색 엔진
         function searchBranch() {
             const category = document.getElementById('categorySelect').value;
             const postcode = document.getElementById('postcode').value; 
