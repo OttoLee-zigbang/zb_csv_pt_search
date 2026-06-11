@@ -13,7 +13,7 @@
         <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">직방 서비스지정점 조회</h1>
         
         <div id="connectionStatus" class="text-center text-xs font-semibold mb-4 p-2 bg-yellow-50 text-yellow-700 rounded-lg animate-pulse">
-            구글 스프레드시트 데이터 불러오는 중...
+            직방 서비스 지정점 DB 불러오는 중...
         </div>
         
         <div class="mb-5">
@@ -62,7 +62,8 @@
                 })
                 .then(csvText => {
                     parseCSV(csvText); 
-                    document.getElementById('connectionStatus').innerText = "✅ 구글 시트 연동 완료! 실시간 데이터 사용 중";
+                    // [수정 완료] 요청하신 직방 전용 DB 연동 성공 문구로 교체
+                    document.getElementById('connectionStatus').innerText = "✅ 직방 서비스 지정점 DB 연동 완료!";
                     document.getElementById('connectionStatus').className = "text-center text-xs font-semibold mb-4 p-2 bg-green-50 text-green-700 rounded-lg";
                 })
                 .catch(error => {
@@ -99,10 +100,9 @@
             }).open();
         }
 
-        // 지정점 필터링 및 출력
         function searchBranch() {
             const category = document.getElementById('categorySelect').value;
-            const postcode = document.getElementById('postcode').value; // 고객이 검색한 5자리 우편번호
+            const postcode = document.getElementById('postcode').value; 
             const resultArea = document.getElementById('resultArea');
 
             if (!postcode) {
@@ -110,11 +110,9 @@
                 return;
             }
 
-            // [수정 1] 권역 매칭(앞 3자리)을 지우고, 5자리 우편번호가 완벽하게 일치하는 데이터만 찾습니다.
             const matchedBranches = branchDatabase.filter(branch => {
                 if (!branch.postcode) return false;
                 
-                // 구글 시트에서 숫자 포맷 때문에 앞자리 '0'이 누락되었을 경우를 대비해 5자리로 맞춘 후 비교
                 let cleanBranchPostcode = branch.postcode.padStart(5, '0');
                 let cleanInputPostcode = postcode.padStart(5, '0');
                 
@@ -136,7 +134,6 @@
                 });
                 resultArea.innerHTML = htmlContent;
             } else {
-                // [수정 2] 검색 결과가 없을 때 노출되는 안내 전화번호 변경 (1588-4141)
                 resultArea.innerHTML = `
                     <div class="text-center py-6">
                         <p class="text-gray-500 font-medium text-sm mb-1">해당 지역에 배정된 지정점이 없습니다.</p>
