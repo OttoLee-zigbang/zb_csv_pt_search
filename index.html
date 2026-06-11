@@ -6,10 +6,21 @@
     <title>직방 서비스 지정점 찾기</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <style>
+        /* [수정 1] 제품군 미선택 시 작동할 좌우 흔들림(Shake) 애니메이션 효과 정의 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .shake-effect {
+            animation: shake 0.4s ease-in-out;
+        }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col items-center py-10 px-4">
 
-    <div class="max-w-md w-full bg-white shadow-lg rounded-2xl p-6 border border-gray-100">
+    <div id="mainCard" class="max-w-md w-full bg-white shadow-lg rounded-2xl p-6 border border-gray-100 transition-transform">
         
         <div class="flex items-center justify-center gap-3 mb-6">
             <img src="./Zigbang_Symbol_Profile.png" alt="직방 로고" class="h-10 w-auto object-contain shrink-0">
@@ -21,8 +32,12 @@
         </div>
         
         <div class="mb-5">
-            <label class="block text-base font-bold text-gray-800 mb-2">제품군 선택</label>
-            <select id="categorySelect" class="w-full border border-gray-300 rounded-lg p-3 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <div class="flex justify-between items-center mb-2">
+                <label class="block text-base font-bold text-gray-800">제품군 선택</label>
+                <span id="categoryAlert" class="text-xs font-semibold text-red-500 hidden">제품군을 선택하세요</span>
+            </div>
+            <select id="categorySelect" onchange="hideAlert()" class="w-full border border-gray-300 rounded-lg p-3 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <option value="선택" selected>선택</option>
                 <option value="도어락">도어락</option>
                 <option value="홈네트워크">홈네트워크</option>
             </select>
@@ -46,7 +61,12 @@
         <hr class="border-gray-200 mb-6">
 
         <div>
-            <h2 class="text-base font-bold text-gray-800 mb-3">지정점 검색 결과</h2>
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-base font-bold text-gray-800">지정점 검색 결과</h2>
+                <button type="button" onclick="resetForm()" class="text-xs font-medium px-3 py-1 rounded-md hover:brightness-90 transition cursor-pointer" style="background-color: #808080; color: #FFFFFF;">
+                    초기화
+                </button>
+            </div>
             <div id="resultArea">
                 <p class="text-gray-400 text-center py-6 text-sm">제품군을 선택하고 주소를 검색해주세요.</p>
             </div>
@@ -103,10 +123,43 @@
             }).open();
         }
 
+        // [수정 1] 사용자가 드롭박스를 올바르게 바꾸면 빨간 경고 문구를 자동으로 지워주는 함수
+        function hideAlert() {
+            const category = document.getElementById('categorySelect').value;
+            if (category !== "선택") {
+                document.getElementById('categoryAlert').classList.add('hidden');
+            }
+        }
+
+        // [수정 2] 시스템 전체 입력 요소 및 결과창을 초기 상태로 돌려놓는 함수
+        function resetForm() {
+            document.getElementById('categorySelect').value = "선택";
+            document.getElementById('postcode').value = "";
+            document.getElementById('address').value = "";
+            document.getElementById('categoryAlert').classList.add('hidden');
+            document.getElementById('resultArea').innerHTML = `
+                <p class="text-gray-400 text-center py-6 text-sm">제품군을 선택하고 주소를 검색해주세요.</p>
+            `;
+        }
+
         function searchBranch() {
             const category = document.getElementById('categorySelect').value;
             const postcode = document.getElementById('postcode').value; 
             const resultArea = document.getElementById('resultArea');
+            const mainCard = document.getElementById('mainCard');
+            const categoryAlert = document.getElementById('categoryAlert');
+
+            // [수정 1] 제품군 선택이 "선택" 상태일 때 흔들림 효과 및 경고 문구 출력 작동
+            if (category === "선택") {
+                categoryAlert.classList.remove('hidden'); // 빨간 안내 노출
+                
+                // 흔들림 클래스 추가 (기존에 있었다면 지웠다 다시 붙여 애니메이션 연속 발동)
+                mainCard.classList.remove('shake-effect');
+                void mainCard.offsetWidth; // 브라우저가 애니메이션 리셋을 인지하도록 하는 장치
+                mainCard.add('shake-effect');
+                mainCard.classList.add('shake-effect');
+                return;
+            }
 
             if (!postcode) {
                 alert("먼저 '주소 찾기' 버튼을 눌러 주소를 선택해주세요!");
