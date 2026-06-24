@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
     <style>
-        /* [수정 1] 제품군 미선택 시 작동할 좌우 흔들림(Shake) 애니메이션 효과 정의 */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -27,8 +26,8 @@
             <h1 class="text-2xl font-bold text-gray-900 tracking-tight">직방 서비스 지정점 찾기</h1>
         </div>
         
-        <div id="connectionStatus" class="text-center text-xs font-semibold mb-4 p-2 bg-yellow-50 text-yellow-700 rounded-lg animate-pulse">
-            직방 서비스 지정점 DB 불러오는 중...
+        <div id="connectionStatus" class="text-center text-xs font-semibold mb-4 p-2 bg-green-50 text-green-700 rounded-lg">
+            🔒 실시간 보안 데이터 조회가 활성화되었습니다.
         </div>
         
         <div class="mb-5">
@@ -74,45 +73,9 @@
     </div>
 
     <script>
-        const googleSheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNQCQJ6a31n8CaHsbys-hZTkrPPWr36q5txpGP9UjZsxG-0XbyRLf7qhAKx7fme3KAlG9LTejSpiI_/pub?gid=0&single=true&output=csv&nocache=" + new Date().getTime();
-
-        let branchDatabase = []; 
-
         window.onload = function() {
-            fetch(googleSheetCsvUrl)
-                .then(response => {
-                    if (!response.ok) throw new Error('네트워크 응답 없음');
-                    return response.text();
-                })
-                .then(csvText => {
-                    parseCSV(csvText); 
-                    document.getElementById('connectionStatus').innerText = "✅ 직방 서비스 지정점 DB 연동 완료!";
-                    document.getElementById('connectionStatus').className = "text-center text-xs font-semibold mb-4 p-2 bg-green-50 text-green-700 rounded-lg";
-                })
-                .catch(error => {
-                    console.error("로드 오류 내역:", error);
-                    document.getElementById('connectionStatus').innerText = "❌ 데이터 연동 실패 (네트워크 상태를 확인해 주세요)";
-                    document.getElementById('connectionStatus').className = "text-center text-xs font-semibold mb-4 p-2 bg-red-50 text-red-700 rounded-lg";
-                });
+            console.log("보안 조회 채널 준비 완료");
         };
-
-        function parseCSV(text) {
-            const lines = text.split(/\r?\n/);
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                
-                const columns = lines[i].split(",");
-                
-                if(columns.length >= 3) {
-                    branchDatabase.push({
-                        category: columns[0]?.replace(/"/g, "").trim(),
-                        name: columns[1]?.replace(/"/g, "").trim(),
-                        postcode: columns[2]?.replace(/"/g, "").trim(),
-                        phone: columns[3]?.replace(/"/g, "").trim() || "연락처 없음"
-                    });
-                }
-            }
-        }
 
         function openAddrSearch() {
             new daum.Postcode({
@@ -123,7 +86,6 @@
             }).open();
         }
 
-        // [수정 1] 사용자가 드롭박스를 올바르게 바꾸면 빨간 경고 문구를 자동으로 지워주는 함수
         function hideAlert() {
             const category = document.getElementById('categorySelect').value;
             if (category !== "선택") {
@@ -131,7 +93,6 @@
             }
         }
 
-        // [수정 2] 시스템 전체 입력 요소 및 결과창을 초기 상태로 돌려놓는 함수
         function resetForm() {
             document.getElementById('categorySelect').value = "선택";
             document.getElementById('postcode').value = "";
@@ -149,14 +110,10 @@
             const mainCard = document.getElementById('mainCard');
             const categoryAlert = document.getElementById('categoryAlert');
 
-            // [수정 1] 제품군 선택이 "선택" 상태일 때 흔들림 효과 및 경고 문구 출력 작동
             if (category === "선택") {
-                categoryAlert.classList.remove('hidden'); // 빨간 안내 노출
-                
-                // 흔들림 클래스 추가 (기존에 있었다면 지웠다 다시 붙여 애니메이션 연속 발동)
+                categoryAlert.classList.remove('hidden');
                 mainCard.classList.remove('shake-effect');
-                void mainCard.offsetWidth; // 브라우저가 애니메이션 리셋을 인지하도록 하는 장치
-                mainCard.add('shake-effect');
+                void mainCard.offsetWidth; 
                 mainCard.classList.add('shake-effect');
                 return;
             }
@@ -166,37 +123,43 @@
                 return;
             }
 
-            const matchedBranches = branchDatabase.filter(branch => {
-                if (!branch.postcode) return false;
-                
-                let cleanBranchPostcode = branch.postcode.padStart(5, '0');
-                let cleanInputPostcode = postcode.padStart(5, '0');
-                
-                return branch.category === category && cleanBranchPostcode === cleanInputPostcode;
-            });
+            resultArea.innerHTML = `<p class="text-gray-400 text-center py-6 text-sm animate-pulse">🔒 안전한 통신망을 통해 지정점 조회 중...</p>`;
 
-            if (matchedBranches.length > 0) {
-                let htmlContent = '';
-                matchedBranches.forEach(branch => {
-                    htmlContent += `
-                        <div class="p-4 mb-3 border border-orange-100 bg-orange-50/30 rounded-xl">
-                            <div class="font-bold text-gray-900 text-base mb-1">${branch.name}</div>
-                            <div class="text-sm text-gray-500 mb-2">${category} 서비스 지정점</div>
-                            <a href="tel:${branch.phone}" class="inline-flex items-center text-sm font-semibold hover:underline">
-                                <span style="color: #ff681b;">📞 ${branch.phone}</span>
-                            </a>
-                        </div>
-                    `;
+            fetch(`/api/search?category=${encodeURIComponent(category)}&postcode=${encodeURIComponent(postcode)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('서버 통신 실패');
+                    return response.json();
+                })
+                .then(data => {
+                    const matchedBranches = data.branches || [];
+
+                    if (matchedBranches.length > 0) {
+                        let htmlContent = '';
+                        matchedBranches.forEach(branch => {
+                            htmlContent += `
+                                <div class="p-4 mb-3 border border-orange-100 bg-orange-50/30 rounded-xl">
+                                    <div class="font-bold text-gray-900 text-base mb-1">${branch.name}</div>
+                                    <div class="text-sm text-gray-500 mb-2">${branch.category} 서비스 지정점</div>
+                                    <a href="tel:${branch.phone}" class="inline-flex items-center text-sm font-semibold hover:underline">
+                                        <span style="color: #ff681b;">📞 ${branch.phone}</span>
+                                    </a>
+                                </div>
+                            `;
+                        });
+                        resultArea.innerHTML = htmlContent;
+                    } else {
+                        resultArea.innerHTML = `
+                            <div class="text-center py-6">
+                                <p class="text-gray-500 font-medium text-sm mb-1">해당 지역에 배정된 지정점이 없습니다.</p>
+                                <p class="text-gray-400 text-xs">고객센터(1588-4141)로 직접 문의해주세요.</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error("조회 오류:", error);
+                    resultArea.innerHTML = `<p class="text-red-500 text-center py-6 text-sm font-semibold">❌ 데이터 조회 중 에러가 발생했습니다.</p>`;
                 });
-                resultArea.innerHTML = htmlContent;
-            } else {
-                resultArea.innerHTML = `
-                    <div class="text-center py-6">
-                        <p class="text-gray-500 font-medium text-sm mb-1">해당 지역에 배정된 지정점이 없습니다.</p>
-                        <p class="text-gray-400 text-xs">고객센터(1588-4141)로 직접 문의해주세요.</p>
-                    </div>
-                `;
-            }
         }
     </script>
 </body>
