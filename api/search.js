@@ -1,6 +1,5 @@
-import fetch from 'node-fetch';
-
 export default async function handler(req, res) {
+    // CORS 및 GET 요청 허용 설정
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET');
     
@@ -14,9 +13,11 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: '필수 파라미터가 누락되었습니다.' });
     }
 
+    // 🔒 외부 노출이 차단된 서버 내부 구글 시트 주소
     const googleSheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNQCQJ6a31n8CaHsbys-hZTkrPPWr36q5txpGP9UjZsxG-0XbyRLf7qhAKx7fme3KAlG9LTejSpiI_/pub?gid=0&single=true&output=csv&nocache=" + new Date().getTime();
 
     try {
+        // Vercel 자체 탑재 fetch 기능 활용 (도구 충돌 차단)
         const response = await fetch(googleSheetCsvUrl);
         if (!response.ok) throw new Error('구글 시트 데이터 로드 실패');
         
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
         const lines = csvText.split(/\r?\n/);
         const matchedBranches = [];
 
+        // 7만 건 파싱 및 비교 처리
         for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             
@@ -45,6 +47,7 @@ export default async function handler(req, res) {
             }
         }
 
+        // 안전하게 걸러진 결과만 응답
         return res.status(200).json({ branches: matchedBranches });
 
     } catch (error) {
