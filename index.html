@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>직방 서비스 지정점 찾기</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -77,6 +77,20 @@
             console.log("보안 조회 채널 준비 완료");
         };
 
+        function escapeHtml(value) {
+            if (value === undefined || value === null) return '';
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function sanitizeTel(value) {
+            return String(value ?? '').replace(/[^0-9+\-() ]/g, '');
+        }
+
         function openAddrSearch() {
             new daum.Postcode({
                 oncomplete: function(data) {
@@ -136,12 +150,16 @@
                     if (matchedBranches.length > 0) {
                         let htmlContent = '';
                         matchedBranches.forEach(branch => {
+                            const safeName = escapeHtml(branch.name);
+                            const safeCategory = escapeHtml(branch.category);
+                            const safePhone = escapeHtml(branch.phone);
+                            const telHref = sanitizeTel(branch.phone);
                             htmlContent += `
                                 <div class="p-4 mb-3 border border-orange-100 bg-orange-50/30 rounded-xl">
-                                    <div class="font-bold text-gray-900 text-base mb-1">${branch.name}</div>
-                                    <div class="text-sm text-gray-500 mb-2">${branch.category} 서비스 지정점</div>
-                                    <a href="tel:${branch.phone}" class="inline-flex items-center text-sm font-semibold hover:underline">
-                                        <span style="color: #ff681b;">📞 ${branch.phone}</span>
+                                    <div class="font-bold text-gray-900 text-base mb-1">${safeName}</div>
+                                    <div class="text-sm text-gray-500 mb-2">${safeCategory} 서비스 지정점</div>
+                                    <a href="tel:${telHref}" class="inline-flex items-center text-sm font-semibold hover:underline">
+                                        <span style="color: #ff681b;">📞 ${safePhone}</span>
                                     </a>
                                 </div>
                             `;
