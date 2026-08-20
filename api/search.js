@@ -8,7 +8,7 @@ const POSTCODE_RE = /^\d{5}$/;
 
 // 구글 시트를 "웹에 게시(누구나 링크로 전체 다운로드 가능)" 대신, 서비스 계정으로만
 // 읽을 수 있는 비공개 방식으로 접근한다. 아래 3개 환경변수는 Vercel 프로젝트
-// Settings > Environments 에서 직접 등록한다 (값은 절대 코드/채팅에 남기지 말 것).
+// Settings > Environment Variables 에서 직접 등록한다 (값은 절대 코드/채팅에 남기지 말 것).
 //   GOOGLE_SERVICE_ACCOUNT_EMAIL   서비스 계정 JSON의 client_email
 //   GOOGLE_SERVICE_ACCOUNT_KEY     서비스 계정 JSON의 private_key
 //   GOOGLE_SHEET_ID                구글 시트 편집 화면 주소의 /d/와 /edit 사이 값
@@ -23,28 +23,22 @@ function base64url(input) {
 
 let cachedToken = null; // { token, expiresAt } — 워밍업된 함수 인스턴스 사이에서 재사용
 
-// Vercel 환경변수 입력창에 여러 줄 PEM 키를 붙여넣는 과정에서 줄바꿈이
-// 이스케이프되거나(\n 두 글자) 아예 한 줄로 뭉개지는 경우가 흔해서, 어떤
-// 형태로 저장됐든 유효한 PEM 형식으로 복구한다.
+// Vercel 환경변수 입력창에 여러 줄 PEM 키를 붙여넣는 과정에서 줄바꿈이 깨지거나,
+// JSON 파일의 "private_key": "..." 줄을 통째로(따옴표·쉼표 포함) 붙여넣는 경우가
+// 흔해서, 앞뒤에 어떤 잡음이 있든 BEGIN~END 블록만 정확히 뽑아 항상 동일한
+// 형태의 PEM으로 재구성한다.
 function normalizePrivateKey(raw) {
-    let key = (raw || '').trim();
+    let key = (raw || '').trim().replace(/\\n/g, '\n').replace(/\\r/g, '');
 
-    if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
-        key = key.slice(1, -1).trim();
+    const match = key.match(/-----BEGIN (RSA )?PRIVATE KEY-----([\s\S]*?)-----END \1PRIVATE KEY-----/);
+    if (!match) {
+        return key;
     }
 
-    key = key.replace(/\\n/g, '\n');
-
-    if (!key.includes('\n')) {
-        const match = key.match(/-----BEGIN PRIVATE KEY-----(.*)-----END PRIVATE KEY-----/);
-        if (match) {
-            const body = match[1].replace(/\s+/g, '');
-            const lines = body.match(/.{1,64}/g) || [];
-            key = `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----\n`;
-        }
-    }
-
-    return key;
+    const headerType = `${match[1] || ''}PRIVATE KEY`;
+    const body = match[2].replace(/\s+/g, '');
+    const lines = body.match(/.{1,64}/g) || [];
+    return `-----BEGIN ${headerType}-----\n${lines.join('\n')}\n-----END ${headerType}-----\n`;
 }
 
 async function getAccessToken() {
@@ -58,6 +52,14 @@ async function getAccessToken() {
     if (!clientEmail || !privateKey) {
         throw new Error('구글 서비스 계정 환경변수가 설정되지 않았습니다.');
     }
+
+    // 키 내용 자체는 절대 로그에 남기지 않고, 형태만 진단한다.
+    console.error('키 진단(내용 아님):', {
+        길이: privateKey.length,
+        줄수: privateKey.split('\n').length,
+        BEGIN로시작: privateKey.startsWith('-----BEGIN'),
+        END로끝남: privateKey.trim().endsWith('-----'),
+    });
 
     const now = Math.floor(Date.now() / 1000);
     const header = { alg: 'RS256', typ: 'JWT' };
