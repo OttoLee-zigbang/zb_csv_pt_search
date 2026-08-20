@@ -23,13 +23,37 @@ function base64url(input) {
 
 let cachedToken = null; // { token, expiresAt } — 워밍업된 함수 인스턴스 사이에서 재사용
 
+// Vercel 환경변수 입력창에 여러 줄 PEM 키를 붙여넣는 과정에서 줄바꿈이
+// 이스케이프되거나(\n 두 글자) 아예 한 줄로 뭉개지는 경우가 흔해서, 어떤
+// 형태로 저장됐든 유효한 PEM 형식으로 복구한다.
+function normalizePrivateKey(raw) {
+    let key = (raw || '').trim();
+
+    if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+        key = key.slice(1, -1).trim();
+    }
+
+    key = key.replace(/\\n/g, '\n');
+
+    if (!key.includes('\n')) {
+        const match = key.match(/-----BEGIN PRIVATE KEY-----(.*)-----END PRIVATE KEY-----/);
+        if (match) {
+            const body = match[1].replace(/\s+/g, '');
+            const lines = body.match(/.{1,64}/g) || [];
+            key = `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----\n`;
+        }
+    }
+
+    return key;
+}
+
 async function getAccessToken() {
     if (cachedToken && cachedToken.expiresAt > Date.now() + 30000) {
         return cachedToken.token;
     }
 
     const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const privateKey = (process.env.GOOGLE_SERVICE_ACCOUNT_KEY || '').replace(/\\n/g, '\n');
+    const privateKey = normalizePrivateKey(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
 
     if (!clientEmail || !privateKey) {
         throw new Error('구글 서비스 계정 환경변수가 설정되지 않았습니다.');
