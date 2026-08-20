@@ -27,11 +27,20 @@ let cachedToken = null; // { token, expiresAt } — 워밍업된 함수 인스�
 // JSON 파일의 "private_key": "..." 줄을 통째로(따옴표·쉼표 포함) 붙여넣는 경우가
 // 흔해서, 앞뒤에 어떤 잡음이 있든 BEGIN~END 블록만 정확히 뽑아 항상 동일한
 // 형태의 PEM으로 재구성한다.
+const ZERO_WIDTH_RE = /[\u200B\u200C\u200D\uFEFF]/g; // 보이지 않는 폭 없는 문자
+const SMART_DASH_RE = /[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g; // en/em dash, minus 등
+
 function normalizePrivateKey(raw) {
-    let key = (raw || '').trim().replace(/\\n/g, '\n').replace(/\\r/g, '');
+    let key = (raw || '')
+        .replace(ZERO_WIDTH_RE, '')
+        .trim()
+        .replace(/\\n/g, '\n')
+        .replace(/\\r/g, '')
+        .replace(SMART_DASH_RE, '-'); // 스마트/유니코드 대시를 일반 하이픈(-)으로 통일
 
     const match = key.match(/-----BEGIN (RSA )?PRIVATE KEY-----([\s\S]*?)-----END \1PRIVATE KEY-----/);
     if (!match) {
+        console.error('키 형식 인식 실패 - 앞 20자 문자코드:', Array.from(key.slice(0, 20)).map((c) => c.charCodeAt(0)));
         return key;
     }
 
