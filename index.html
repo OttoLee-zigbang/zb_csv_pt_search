@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>직방 서비스 지정점 찾기</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3/dist/index.global.js" integrity="sha384-2ql948lIdLcGEE0/qxNiudyTjgauA3RDJERu5xW75kFCvSl5a9odyQYCb6tEjnmB" crossorigin="anonymous"></script>
     <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
     <style>
         @keyframes shake {
@@ -24,10 +24,6 @@
         <div class="flex items-center justify-center gap-3 mb-6">
             <img src="./Zigbang_Symbol_Profile.png" alt="직방 로고" class="h-10 w-auto object-contain shrink-0">
             <h1 class="text-2xl font-bold text-gray-900 tracking-tight">직방 서비스 지정점 찾기</h1>
-        </div>
-        
-        <div id="connectionStatus" class="text-center text-xs font-semibold mb-4 p-2 bg-green-50 text-green-700 rounded-lg">
-            🔒 실시간 보안 데이터 조회가 활성화되었습니다.
         </div>
         
         <div class="mb-5">
@@ -73,10 +69,6 @@
     </div>
 
     <script>
-        window.onload = function() {
-            console.log("보안 조회 채널 준비 완료");
-        };
-
         function escapeHtml(value) {
             if (value === undefined || value === null) return '';
             return String(value)
@@ -137,9 +129,10 @@
                 return;
             }
 
-            resultArea.innerHTML = `<p class="text-gray-400 text-center py-6 text-sm animate-pulse">🔒 안전한 통신망을 통해 지정점 조회 중...</p>`;
+            resultArea.innerHTML = `<p class="text-gray-400 text-center py-6 text-sm animate-pulse">지정점 조회 중...</p>`;
 
-            fetch(`/api/search?category=${encodeURIComponent(category)}&postcode=${encodeURIComponent(postcode)}`)
+            const API_BASE = 'https://zb-csv-pt-search.vercel.app';
+            fetch(`${API_BASE}/api/search?category=${encodeURIComponent(category)}&postcode=${encodeURIComponent(postcode)}`)
                 .then(response => {
                     if (!response.ok) throw new Error('서버 통신 실패');
                     return response.json();
